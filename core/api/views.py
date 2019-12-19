@@ -1,3 +1,4 @@
+import json
 import os
 
 from rest_framework.permissions import AllowAny
@@ -17,7 +18,6 @@ class PengsuTeacher(APIView):
         data = request.data["action"]["parameters"]
 
         # "2019년 / 6평 / 수리 가 / 16번 문제"
-        print(data)
         year = data["BID_DT_CYEAR"]["value"]
         test = data["test"]["value"]  # NUGU에게 그대로 던져줌
         _test = time_list[test]  # sns에 url로 사용됨
@@ -37,7 +37,6 @@ class PengsuTeacher(APIView):
 
         cool = Message(os.environ.get("sms_api_key"), os.environ.get("sms_api_secret"))
         response = cool.send(params)
-        print(response)
 
         response_builder = {
             "version": "2.0",
@@ -56,14 +55,21 @@ class PengsuListening(APIView):
     permission_classes = [AllowAny]
 
     def post(self, request):
-        # data = getattr(request.data["action"]["parameters"])
-        #
-        # # "2019년 / 수능 / 영어듣기 / 1번 문제" 재생해줘
-        # # "2019년 / 수능 / 영어듣기" 재생해줘
-        # year = getattr(data["BID_DT_CYEAR"]["value"])
-        # test = getattr(data["test"]["value"])
-        # test = getattr(time_list[test])
-        # question = getattr(data["question"]["value"])
+        data = request.data["action"]["parameters"]
+
+        # "2019년 / 수능 / 영어듣기 / 1번 문제" 재생해줘
+        # "2019년 / 수능 / 영어듣기" 재생해줘
+        year: str = data["BID_DT_CYEAR2"]["value"]
+        test: str = data["test2"]["value"]
+        test: str = time_list[test]
+        try:
+            question: str = data["question2"]["value"]
+        except KeyError:
+            question = "all"
+
+        with open("core/api/eng_listening_table.json") as table:
+            eng_listening_table = json.load(table)
+        eng_listening_url = eng_listening_table[year][test][question]
 
         response_builder = {
             "version": "2.0",
@@ -74,7 +80,7 @@ class PengsuListening(APIView):
                     "type": "AudioPlayer.Play",
                     "audioItem": {
                         "stream": {
-                            "url": "https://res.cloudinary.com/googit/video/upload/v1576762107/SAT/eng_listening/muxed_ikfu02.mp3",
+                            "url": eng_listening_url,
                             "offsetInMilliseconds": 0,
                             "progressReport": {
                                 "progressReportDelayInMilliseconds": 0,
